@@ -1,3 +1,21 @@
+buildscript {
+    dependencies {
+        classpath 'gradle.plugin.info.vividcode.android.build:vc-gradle-android-sdk-manager:0.9.0'
+    }
+}
+
+// Android SDK の自動セットアップ。
+// gradlew コマンド実行時に -PsetupAndroidSdk というコマンド引数を渡すと自動セットアップが走る。
+if (project.hasProperty('setupAndroidSdk')) {
+    apply plugin: 'info.vividcode.android.sdk-manager'
+    // android プラグインの適用前に行わないと Support Library が見つけられなくなる。
+    androidSdkManager.updateSdkComponents(
+            ["tools", "platform-tools", "extra-android-m2repository", "extra-google-m2repository"],
+            acceptLicenseAutomatically: true)
+    androidSdkManager.updateSdkPlatformAndBuildToolsAfterEvaluate(
+            acceptLicenseAutomatically: true)
+}
+
 apply plugin: 'com.android.application'
 
 android {

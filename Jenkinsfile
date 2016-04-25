@@ -21,7 +21,7 @@ node {
     checkout scm
 
     stage 'Build'
-    sh './gradlew assemble'
+    sh './gradlew -PsetupAndroidSdk assemble'
 
     stage 'Lint'
     sh './gradlew lint'
