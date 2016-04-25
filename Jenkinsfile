@@ -1,6 +1,7 @@
 node {
     def currentPath = pwd()
-    env.ANDROID_HOME = currentPath + '/.android-sdk'
+    // こういう場所に置いていいものかどうか……？
+    env.ANDROID_HOME = currentPath + '/../.android-sdk'
 
     stage 'Environment'
     sh 'java -version'
@@ -10,6 +11,7 @@ node {
         echo 'Android SDK already exists'
     } else {
         stage 'Setup Android SDK'
+        // 富豪的なのでもうちょっといい方法を考えたい。
         sh 'curl --fail --output android-sdk.tgz http://dl.google.com/android/android-sdk_r24.4.1-linux.tgz'
         sh 'tar -xvf android-sdk.tgz'
         sh 'mv android-sdk-linux "$ANDROID_HOME"'
