@@ -32,8 +32,6 @@ def avdInfoAndroid23 = [
 def avdInfo = avdInfoAndroid23
 
 task('startAvd') << {
-    assertAvdConsolePortFilePropertyIsNotNull(consolePortFile)
-
     Path sdkDir = androidSdkDir.toPath()
     AndroidSdk androidSdk = new AndroidSdk(sdkDir)
     EmulatorCommandExecutor emulatorCmd = androidSdk.emulatorCommand()
@@ -139,8 +137,6 @@ task('startAvd') << {
 }
 
 task('killAvd') << {
-    assertAvdConsolePortFilePropertyIsNotNull(consolePortFile)
-
     String consolePortStr = new File(consolePortFile).text
     Avd.create(Integer.valueOf(consolePortStr)).withCloseable {
         Avd avd = it
