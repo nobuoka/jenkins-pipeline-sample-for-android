@@ -1,6 +1,6 @@
 node {
     def currentPath = pwd()
-    env.ANDROID_HOME = currentPath + '/.android-sdk'
+    env.ANDROID_HOME = currentPath + '\\.android-sdk'
 
     stage 'Environment'
     sh 'java -version'
@@ -10,8 +10,8 @@ node {
         echo 'Android SDK already exists'
     } else {
         stage 'Setup Android SDK'
-        sh 'curl --fail --output android-sdk.tgz http://dl.google.com/android/android-sdk_r24.4.1-linux.tgz'
-        sh 'tar -xvf android-sdk.tgz'
+        //sh 'curl --fail --output android-sdk.tgz http://dl.google.com/android/android-sdk_r24.4.1-linux.tgz'
+        //sh 'tar -xvf android-sdk.tgz'
         sh 'mv android-sdk-linux $ANDROID_HOME'
     }
 
