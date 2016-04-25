@@ -20,16 +20,16 @@ String consolePortFile = 'avd-console-port'
 File androidSdkDir = appProject.android.sdkDirectory
 
 // AVD の設定。
-def avdInfoAndroid23 = [
-        targetAvdName: "default-api-level-23",
+def avdInfoAndroid19 = [
+        targetAvdName: "armeabi-v7a-19-test",
         // インストールに使用。
-        targetApiId: "android-23",
-        systemImageId: "sys-img-x86-android-23",
+        targetApiId: "android-19",//"android-23"
+        systemImageId: "sys-img-armeabi-v7a-android-19",//"""addon-google_apis_x86-google-19"//"sys-img-x86-android-23"
         // AVD 生成に使用。
-        avdTargetId: "android-23", // android list targets で確認可能。
-        abi: "x86",
+        avdTargetId: "android-19",//"""Google Inc.:Google APIs (x86 System Image):19"//"android-23" // android list targets で確認可能。
+        abi: "armeabi-v7a",//""x86"//"armeabi-v7a"
 ]
-def avdInfo = avdInfoAndroid23
+def avdInfo = avdInfoAndroid19
 
 task('startAvd') << {
     Path sdkDir = androidSdkDir.toPath()
