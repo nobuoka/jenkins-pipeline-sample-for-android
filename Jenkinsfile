@@ -1,6 +1,6 @@
 node {
     def currentPath = pwd()
-    env.ANDROID_HOME = currentPath + '\\.android-sdk'
+    env.ANDROID_HOME = currentPath + '/.android-sdk'
 
     stage 'Environment'
     sh 'java -version'
