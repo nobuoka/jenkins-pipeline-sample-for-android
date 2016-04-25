@@ -10,9 +10,9 @@ node {
         echo 'Android SDK already exists'
     } else {
         stage 'Setup Android SDK'
-        //sh 'curl --fail --output android-sdk.tgz http://dl.google.com/android/android-sdk_r24.4.1-linux.tgz'
-        //sh 'tar -xvf android-sdk.tgz'
-        sh 'mv android-sdk-linux $ANDROID_HOME'
+        sh 'curl --fail --output android-sdk.tgz http://dl.google.com/android/android-sdk_r24.4.1-linux.tgz'
+        sh 'tar -xvf android-sdk.tgz'
+        sh 'mv android-sdk-linux "$ANDROID_HOME"'
     }
 
     // Mark the code checkout 'stage'....
@@ -20,7 +20,15 @@ node {
     // Checkout code from repository
     checkout scm
 
-    // Mark the code build 'stage'....
     stage 'Build'
+    sh './gradlew assemble'
+
+    stage 'Lint'
+    sh './gradlew lint'
+
+    stage 'Local Unit Test'
     sh './gradlew test'
+
+    stage 'Instrumented Test'
+    sh './gradlew connectedAndroidTest'
 }
