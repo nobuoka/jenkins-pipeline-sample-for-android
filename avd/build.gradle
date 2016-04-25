@@ -1,0 +1,151 @@
+// まだ開発中。
+// とりあえず動くけどちゃんとはしてない。
+
+Project appProject = parent.project('app')
+evaluationDependsOn(appProject.path)
+buildscript {
+    dependencies {
+        classpath files('./AndroidSdkClientForJava.jar')
+    }
+}
+
+import info.vividcode.android.sdk.client.*
+
+import java.nio.file.Path
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.regex.Pattern
+
+String consolePortFile = 'avd-console-port'
+File androidSdkDir = appProject.android.sdkDirectory
+
+// AVD の設定。
+def avdInfoAndroid23 = [
+        targetAvdName: "default-api-level-23",
+        // インストールに使用。
+        targetApiId: "android-23",
+        systemImageId: "sys-img-x86-android-23",
+        // AVD 生成に使用。
+        avdTargetId: "android-23", // android list targets で確認可能。
+        abi: "x86",
+]
+def avdInfo = avdInfoAndroid23
+
+task('startAvd') << {
+    assertAvdConsolePortFilePropertyIsNotNull(consolePortFile)
+
+    Path sdkDir = androidSdkDir.toPath()
+    AndroidSdk androidSdk = new AndroidSdk(sdkDir)
+    EmulatorCommandExecutor emulatorCmd = androidSdk.emulatorCommand()
+    // 既に存在する AVD の名前一覧を取得。
+    List<String> avdNames = emulatorCmd.listAvds()
+
+    // 使用しようとしている AVD が既にに存在するかどうか。
+    boolean targetAvdExists = avdNames.contains(avdInfo.targetAvdName)
+    // まだ存在しない場合は作成する。
+    if (!targetAvdExists) {
+        AndroidCommandExecutor androidCmdExec = androidSdk.androidCommand()
+        // 既にインストール済みかどうか気にせず、とりあえず必要なシステムイメージなどのインストール (アップデート)。
+        AutoRespondingProcessIoHandler.Factory f = new AutoRespondingProcessIoHandler.Factory(Pattern.compile("Do you accept the license .*"), "y")
+
+        androidCmdExec.updateSdkWithFilter(avdInfo.targetApiId, f)
+        androidCmdExec.updateSdkWithFilter(avdInfo.systemImageId, f)
+        // AVD 作成。
+        AutoRespondingProcessIoHandler.Factory f2 = new AutoRespondingProcessIoHandler.Factory(
+                Pattern.compile("Do you wish to create a custom hardware profile .*"), "")
+        androidCmdExec.createAvd(avdInfo.targetAvdName, avdInfo.avdTargetId, avdInfo.abi, f2)
+    }
+
+    File f = new File(consolePortFile)
+    if (f.exists() && !f.canWrite())
+        throw new RuntimeException("Console port output file exists, but it cannot be written to: " + f.absolutePath)
+
+    // AVD 起動。
+    logger.info('AVD: starting')
+    emulatorCmd.startAvd(avdInfo.targetAvdName, ['-no-window', '-no-boot-anim', '-gpu', 'on']).withCloseable {
+        logger.info('AVD: started')
+        Avd avd = it
+        // AVD のコンソールポートといろいろやり取りできる状態。
+
+        new File(consolePortFile).text = avd.consolePort.toString()
+
+        // adb で操作できるようになるまで待つ。
+        // (あくまで adb デーモンの起動を待つだけなので、ブート完了は別に待つ必要がある。)
+        AdbCommandExecutor adbCommand = androidSdk.adbCommand()
+        logger.info("AVD: wait for device...")
+        while (true) {
+            final AtomicBoolean complete = new AtomicBoolean(false)
+            final java.lang.Thread mainThread = Thread.currentThread()
+            java.lang.Thread t = new Thread() {
+                public void run() {
+                    try {
+                        java.lang.Thread.sleep(TimeUnit.MILLISECONDS.convert(10, TimeUnit.SECONDS))
+                        if (!complete.get()) {
+                            mainThread.interrupt()
+                        }
+                    } catch (InterruptedException e) {
+                        // do nothing
+                    }
+                }
+            }
+            t.start()
+            try {
+                adbCommand.waitForDevice(avd.getConsolePort())
+                complete.set(true)
+                t.interrupt()
+                break
+            } catch (InterruptedException e) {
+                logger.info("AVD: status?")
+                avd.sendCommand("avd status")
+                logger.info(avd.readConsoleOutput(2, TimeUnit.SECONDS))
+            }
+        }
+        logger.info("AVD: done")
+
+        // ブート完了を待つ。
+        // See: https://devmaze.wordpress.com/2011/12/12/starting-and-stopping-android-emulators/
+        // See: http://android.stackexchange.com/questions/83726/how-to-adb-wait-for-device-until-the-home-screen-shows-up
+        logger.info("AVD: wait for device boot complete")
+        while (true) {
+            String bootComplete = adbCommand.shell(avd.getConsolePort(), "getprop dev.bootcomplete")
+            if (bootComplete.equals("1")) break
+            else Thread.sleep(500)
+        }
+        logger.info("AVD: device boot completed")
+        // API level 9 以降のみ。
+        logger.info("AVD: wait for sys.boot_completed set")
+        while (true) {
+            String sysBootCompleted = adbCommand.shell(avd.getConsolePort(), "getprop sys.boot_completed")
+            if (sysBootCompleted.equals("1")) break
+            else Thread.sleep(500)
+        }
+        logger.info("AVD: sys.boot_completed is set")
+        // アニメーション。
+        logger.info("AVD: wait for stopping boot animation")
+        while (true) {
+            String propInitSvcBootAnim = adbCommand.shell(avd.getConsolePort(), "getprop init.svc.bootanim")
+            if (propInitSvcBootAnim.equals("stopped")) break
+            else { println propInitSvcBootAnim; Thread.sleep(500) }
+        }
+        logger.info("AVD: boot animation is stopped")
+
+        sleep(15_000)
+        // スクリーンのロックの解除。
+        // See: https://spin.atomicobject.com/2016/03/10/android-test-script/
+        logger.info("AVD: unlocking...")
+        adbCommand.shell(avd.getConsolePort(), "shell input keyevent 82")
+        logger.info("AVD: unlock finished")
+    }
+}
+
+task('killAvd') << {
+    assertAvdConsolePortFilePropertyIsNotNull(consolePortFile)
+
+    String consolePortStr = new File(consolePortFile).text
+    Avd.create(Integer.valueOf(consolePortStr)).withCloseable {
+        Avd avd = it
+        // 終了。
+        avd.readConsoleOutput(10, TimeUnit.SECONDS)
+        avd.kill()
+    }
+}

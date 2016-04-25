@@ -32,5 +32,10 @@ node {
     sh './gradlew test'
 
     stage 'Instrumented Test'
-    sh './gradlew connectedAndroidTest'
+    try {
+        sh './gradlew :avd:startAvd'
+        sh './gradlew connectedAndroidTest'
+    } finally {
+        sh './gradlew :avd:killAvd'
+    }
 }
