@@ -46,7 +46,7 @@ node {
 
         stage 'Assemble'
         withGheStatusSender('Assemble', env.GIT_COMMIT, 'Building') {
-            sh './gradlew -PsetupAndroidSdk assemble'
+            sh './gradlew assemble'
         }
 
         stage 'Lint'
