@@ -56,7 +56,7 @@ node {
             def pfs = ['']
             def bts = ['production', 'debug']
             List<String> variants = []
-            pfs.each { pf -> bts.each{ bt -> variants.add(pf + (pf.isEmpty() ? pt : bt.capitalize())) } }
+            pfs.each { pf -> bts.each{ bt -> variants.add(pf + (pf.isEmpty() ? bt : bt.capitalize())) } }
 
             // List#collect メソッドを使いたいが、groovy-cps ライブラリのバグで Pipeline 上でうまく動かない。
             // See : https://issues.jenkins-ci.org/browse/JENKINS-26481
