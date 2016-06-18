@@ -31,6 +31,8 @@ node {
     stage 'Local Unit Test'
     sh './gradlew test'
 
+    // Emulator にバージョンアップで以下のものが使えなくなったので一旦コメントアウト。
+    /*
     stage 'Instrumented Test'
     try {
         sh './gradlew :avd:startAvd'
@@ -38,4 +40,5 @@ node {
     } finally {
         sh './gradlew :avd:killAvd'
     }
+    */
 }
