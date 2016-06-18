@@ -54,7 +54,7 @@ node {
             // lint タスクを実行した場合、全 variant に対して lint が実行されるが、出力は 1 つしかないないぽい。
             // とりあえずは各 variant を明示して lint することで対応する。
             def pfs = ['']
-            def bts = ['production', 'debug']
+            def bts = ['release', 'debug']
             List<String> variants = []
             pfs.each { pf -> bts.each{ bt -> variants.add(pf + (pf.isEmpty() ? bt : bt.capitalize())) } }
 
